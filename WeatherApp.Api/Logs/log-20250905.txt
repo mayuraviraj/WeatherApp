@@ -1,0 +1,3 @@
+[15:06:06 WRN] Failed to determine the https port for redirect.
+[15:06:06 INF] GetForecasts ==================== 
+[15:06:06 INF] Calling open meteo api with 53 and 45
