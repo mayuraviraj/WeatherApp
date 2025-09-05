@@ -26,7 +26,7 @@ public class WeatherService(AppDbContext  _context, IHttpClientFactory  _httpCli
         _logger.LogInformation("Calling open meteo api with {latitude} and {longitude}",
             latitude, longitude);
         var url = $"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m";
-        var client = _httpClientFactory.CreateClient("OpenMeteo");
+        var client = _httpClientFactory.CreateClient("OpenMeteoClient");
         try
         {
             var response = await client.GetAsync(url);
