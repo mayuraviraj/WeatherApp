@@ -6,5 +6,5 @@ public interface IWeatherService
 {
     Task<int> AddForecastAsync(WeatherForecastDto dto);
     
-    Task<string> GetTemperatureAsync(long latitude, long longitude);
+    Task<string> GetTemperatureAsync(string city);
 }

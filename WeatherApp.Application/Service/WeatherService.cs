@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Polly.Registry;
 using WeatherApp.Application.DTOs;
 using WeatherApp.Application.Interface;
 using WeatherApp.Domain.Entities;
@@ -7,6 +8,7 @@ using WeatherApp.Persistence.Data;
 namespace WeatherApp.Application.Service;
 
 public class WeatherService(AppDbContext  _context, IHttpClientFactory  _httpClientFactory, 
+    ResiliencePipelineProvider<string> pipelineProvider,
     ILogger<WeatherService> _logger) : IWeatherService
 {
     public async Task<int> AddForecastAsync(WeatherForecastDto dto)
@@ -21,27 +23,34 @@ public class WeatherService(AppDbContext  _context, IHttpClientFactory  _httpCli
         return enity.Id;
     }
 
-    public async Task<string> GetTemperatureAsync(long latitude, long longitude)
+    public async Task<string> GetTemperatureAsync(string city)
     {
-        _logger.LogInformation("Calling open meteo api with {latitude} and {longitude}",
-            latitude, longitude);
-        var url = $"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m";
+        _logger.LogInformation("openweathermap with city {}", city);
+
+        var pipeline = pipelineProvider.GetPipeline("default");
+        var url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid=661a1bcf2fae84fe5e5298071369b64c&units=metric";
         var client = _httpClientFactory.CreateClient("OpenMeteoClient");
-        try
-        {
-            var response = await client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            return content;
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-        }
-        return null;
+        
+        var response = await pipeline.ExecuteAsync(async ct => await client.GetAsync(url, ct));
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
+        return content;
+        
+        // try
+        // {
+        //     var response = await client.GetAsync(url);
+        //     response.EnsureSuccessStatusCode();
+        //     var content = await response.Content.ReadAsStringAsync();
+        //     return content;
+        // }
+        // catch (HttpRequestException ex)
+        // {
+        //     _logger.LogError(ex, ex.Message);
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError(ex, ex.Message);
+        // }
+        // return null;
     }
 }

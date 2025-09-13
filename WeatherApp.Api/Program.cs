@@ -2,7 +2,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
-using Polly.Extensions.Http;
+using Polly.Retry;
 using Serilog;
 using WeatherApp.Application.Interface;
 using WeatherApp.Application.Service;
@@ -15,10 +15,18 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseInMemoryDatabase("InMemoryDatabase"));
 
 builder.Services.AddScoped<IWeatherService, WeatherService>();
-
-builder.Services.AddHttpClient("OpenMeteoClient")
-    .AddPolicyHandler(GetRetryPolicy());
-
+builder.Services.AddResiliencePipeline("default", x =>
+{
+    x.AddRetry(new RetryStrategyOptions
+        {
+            ShouldHandle = new PredicateBuilder().Handle<Exception>(),
+            Delay = TimeSpan.FromSeconds(2),
+            MaxRetryAttempts = 2,
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true
+        })
+        .AddTimeout(TimeSpan.FromSeconds(30));
+});
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpClient();
@@ -50,11 +58,3 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();
-
-static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
-{
-    return HttpPolicyExtensions
-        .HandleTransientHttpError()
-        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-}
- 

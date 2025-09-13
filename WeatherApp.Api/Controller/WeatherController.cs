@@ -20,7 +20,7 @@ public class WeatherController(IWeatherService _service, ILogger<WeatherControll
     public async Task<ActionResult> GetForecasts()
     {
         _logger.LogInformation("GetForecasts ==================== ");
-        string weather = await _service.GetTemperatureAsync(53L, 45L);
+        string weather = await _service.GetTemperatureAsync("London");
         return Ok(weather);
     }
 }
