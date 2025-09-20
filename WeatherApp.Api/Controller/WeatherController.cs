@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WeatherApp.Application.DTOs;
 using WeatherApp.Application.Interface;
 
@@ -6,6 +7,7 @@ namespace WeatherApp.Api.Controller;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class WeatherController(IWeatherService _service, ILogger<WeatherController> _logger) : ControllerBase
 {
 
@@ -20,7 +22,7 @@ public class WeatherController(IWeatherService _service, ILogger<WeatherControll
     public async Task<ActionResult> GetForecasts()
     {
         _logger.LogInformation("GetForecasts ==================== ");
-        string weather = await _service.GetTemperatureAsync("London");
+        string weather = "TEST";// await _service.GetTemperatureAsync("London");
         return Ok(weather);
     }
 }

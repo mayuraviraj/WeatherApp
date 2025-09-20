@@ -1,9 +1,12 @@
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Retry;
 using Serilog;
+using Serilog.Core;
 using WeatherApp.Application.Interface;
 using WeatherApp.Application.Service;
 using WeatherApp.Infrastructure.Security;
@@ -15,6 +18,9 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseInMemoryDatabase("InMemoryDatabase"));
 
 builder.Services.AddScoped<IWeatherService, WeatherService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+
 builder.Services.AddResiliencePipeline("default", x =>
 {
     x.AddRetry(new RetryStrategyOptions
@@ -39,11 +45,29 @@ builder.Services.AddAuthentication("Bearer")
         options.TokenValidationParameters = new TokenValidationParameters {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = true,
+            ValidateLifetime = false,
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(secretKey)
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = c =>
+            {
+                c.NoResult();
+
+                Console.WriteLine(c.Exception);
+
+                c.Response.StatusCode = 500;
+                c.Response.ContentType = "text/plain";
+                return c.Response.WriteAsync("An error occured processing your authentication.");
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("JWT Authentication succeeded for " + context.Principal.Identity.Name);
+                return Task.CompletedTask;
+            }
         };
     });
 builder.Services.AddSecurityInfrastructure();
@@ -53,8 +77,13 @@ var logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .CreateLogger();
 builder.Logging.AddSerilog(logger);
-
 var app = builder.Build();
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
+
+IdentityModelEventSource.ShowPII = true;
+app.UseAuthentication();
+app.UseAuthorization();
+
+
 app.MapControllers();
 app.Run();
