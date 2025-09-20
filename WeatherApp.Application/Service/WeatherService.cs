@@ -25,7 +25,17 @@ public class WeatherService(AppDbContext  _context, IHttpClientFactory  _httpCli
 
     public async Task<string> GetTemperatureAsync(string city)
     {
-        _logger.LogInformation("openweathermap with city {}", city);
+        var weatherForecast = new WeatherForecast
+        {
+            Id = 1,
+            Summary = "test",
+            Temperature = 23
+        };
+        _context.WeatherForecasts.Add(weatherForecast);
+        var id = await _context.SaveChangesAsync();
+        
+        
+        _logger.LogInformation("Saved {}", id);
 
         var pipeline = pipelineProvider.GetPipeline("default");
         var url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid=661a1bcf2fae84fe5e5298071369b64c&units=metric";

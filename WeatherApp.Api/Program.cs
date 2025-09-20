@@ -14,8 +14,16 @@ using WeatherApp.Persistence.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(opt => 
-    opt.UseInMemoryDatabase("InMemoryDatabase"));
+// builder.Services.AddDbContext<AppDbContext>(opt => 
+//     opt.UseInMemoryDatabase("InMemoryDatabase"));
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 43)) // Replace with your MySQL version
+    )
+);
+
 
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -86,4 +94,6 @@ app.UseAuthorization();
 
 
 app.MapControllers();
+
+
 app.Run();
